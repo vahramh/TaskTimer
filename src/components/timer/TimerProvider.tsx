@@ -48,24 +48,44 @@ export function TimerProvider({ children }: TimerProviderProps) {
 
   // Check for active timer on mount
   useEffect(() => {
-    const checkActiveTimer = async () => {
-      try {
-        const activeTimerData = await timerAPI.getActiveTimer();
-        if (activeTimerData) {
-          // Find the task and set it as active
-          const task = tasks.find(t => t.id === activeTimerData.taskId);
-          if (task) {
-            setActiveTimer(task);
-            const start = new Date(activeTimerData.startTime).getTime();
-            setStartTime(start);
-            setElapsedTime(Math.floor((Date.now() - start) / 1000));
-          }
-        }
-      } catch (err) {
-        // No active timer or error - that's okay
-        console.log('No active timer found');
+// Check for active timer on mount - run this independently
+useEffect(() => {
+  const checkActiveTimer = async () => {
+    try {
+      const activeTimerData = await timerAPI.getActiveTimer();
+      if (activeTimerData) {
+        console.log('Found existing active timer:', activeTimerData);
+        
+        // Create a temporary task object if tasks haven't loaded yet
+        const task = tasks.find(t => t.id === activeTimerData.taskId) || {
+          id: activeTimerData.taskId,
+          name: activeTimerData.taskName || 'Loading...',
+          color: '#3B82F6',
+          totalTime: 0
+        };
+        
+        setActiveTimer(task);
+        const start = new Date(activeTimerData.startTime).getTime();
+        setStartTime(start);
+        setElapsedTime(Math.floor((Date.now() - start) / 1000));
       }
-    };
+    } catch (err) {
+      console.log('No active timer found');
+    }
+  };
+
+  checkActiveTimer(); // Run immediately, don't wait for tasks
+}, []); // Remove tasks dependency
+
+// Update active timer with full task data when tasks load
+useEffect(() => {
+  if (tasks.length > 0 && activeTimer && !tasks.find(t => t.id === activeTimer.id)) {
+    const fullTask = tasks.find(t => t.id === activeTimer.id);
+    if (fullTask) {
+      setActiveTimer(fullTask);
+    }
+  }
+}, [tasks, activeTimer]);
 
     if (tasks.length > 0) {
       checkActiveTimer();
@@ -84,23 +104,45 @@ export function TimerProvider({ children }: TimerProviderProps) {
     return () => clearInterval(interval);
   }, [activeTimer, startTime]);
 
-  const startTimer = useCallback(async (task: Task) => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await timerAPI.startTimer(task.id);
-      
-      setActiveTimer(task);
-      setStartTime(Date.now());
-      setElapsedTime(0);
-    } catch (err) {
-      setError('Failed to start timer');
-      console.error('Start timer error:', err);
-    } finally {
-      setLoading(false);
+const startTimer = useCallback(async (task: Task) => {
+  try {
+    setLoading(true);
+    setError(null);
+    
+    // Check if there's already an active timer
+    const existingTimer = await timerAPI.getActiveTimer();
+    
+    if (existingTimer) {
+      if (existingTimer.taskId === task.id) {
+        // Same task - stop the timer
+        console.log('Stopping current timer for same task');
+        await timerAPI.stopTimer();
+        setActiveTimer(null);
+        setStartTime(null);
+        setElapsedTime(0);
+        return;
+      } else {
+        // Different task - switch timer
+        console.log('Switching from task', existingTimer.taskId, 'to task', task.id);
+        await timerAPI.switchTimer(task.id);
+      }
+    } else {
+      // No existing timer - start new one
+      console.log('Starting new timer for task', task.id);
+      await timerAPI.startTimer(task.id);
     }
-  }, []);
+    
+    setActiveTimer(task);
+    setStartTime(Date.now());
+    setElapsedTime(0);
+    
+  } catch (err) {
+    setError('Failed to start timer');
+    console.error('Start timer error:', err);
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
 const stopTimer = useCallback(async () => {
   if (!activeTimer) return;
