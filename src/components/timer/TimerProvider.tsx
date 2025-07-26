@@ -46,52 +46,45 @@ export function TimerProvider({ children }: TimerProviderProps) {
     loadTasks();
   }, []);
 
-  // Check for active timer on mount
+// Check for active timer on mount
   useEffect(() => {
-// Check for active timer on mount - run this independently
-useEffect(() => {
-  const checkActiveTimer = async () => {
-    try {
-      const activeTimerData = await timerAPI.getActiveTimer();
-      if (activeTimerData) {
-        console.log('Found existing active timer:', activeTimerData);
-        
-        // Create a temporary task object if tasks haven't loaded yet
-        const task = tasks.find(t => t.id === activeTimerData.taskId) || {
-          id: activeTimerData.taskId,
-          name: activeTimerData.taskName || 'Loading...',
-          color: '#3B82F6',
-          totalTime: 0
-        };
-        
-        setActiveTimer(task);
-        const start = new Date(activeTimerData.startTime).getTime();
-        setStartTime(start);
-        setElapsedTime(Math.floor((Date.now() - start) / 1000));
+    const checkActiveTimer = async () => {
+      try {
+        const activeTimerData = await timerAPI.getActiveTimer();
+        if (activeTimerData) {
+          console.log('Found existing active timer:', activeTimerData);
+          
+          // Create a temporary task object if tasks haven't loaded yet
+          const task = tasks.find(t => t.id === activeTimerData.taskId) || {
+            id: activeTimerData.taskId,
+            name: activeTimerData.taskName || 'Loading...',
+            color: '#3B82F6',
+            totalTime: 0
+          };
+          
+          setActiveTimer(task);
+          const start = new Date(activeTimerData.startTime).getTime();
+          setStartTime(start);
+          setElapsedTime(Math.floor((Date.now() - start) / 1000));
+        }
+      } catch (err) {
+        console.log('No active timer found');
       }
-    } catch (err) {
-      console.log('No active timer found');
+    };
+
+    checkActiveTimer();
+  }, []);
+
+  // Update active timer with full task data when tasks load
+  useEffect(() => {
+    if (tasks.length > 0 && activeTimer && activeTimer.name === 'Loading...') {
+      const fullTask = tasks.find(t => t.id === activeTimer.id);
+      if (fullTask) {
+        setActiveTimer(fullTask);
+      }
     }
-  };
-
-  checkActiveTimer(); // Run immediately, don't wait for tasks
-}, []); // Remove tasks dependency
-
-// Update active timer with full task data when tasks load
-useEffect(() => {
-  if (tasks.length > 0 && activeTimer && !tasks.find(t => t.id === activeTimer.id)) {
-    const fullTask = tasks.find(t => t.id === activeTimer.id);
-    if (fullTask) {
-      setActiveTimer(fullTask);
-    }
-  }
-}, [tasks, activeTimer]);
-
-    if (tasks.length > 0) {
-      checkActiveTimer();
-    }
-  }, [tasks]);
-
+  }, [tasks, activeTimer]);
+  
   // Real-time timer updates
   useEffect(() => {
     let interval: NodeJS.Timeout;
