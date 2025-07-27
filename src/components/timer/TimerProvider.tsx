@@ -46,51 +46,57 @@ export function TimerProvider({ children }: TimerProviderProps) {
     loadTasks();
   }, []);
 
-// Check for active timer on mount
+// Check for active timer on mount - with debug logging
   useEffect(() => {
     const checkActiveTimer = async () => {
       try {
+        console.log('🔍 Checking for active timer...');
         const activeTimerData = await timerAPI.getActiveTimer();
+        console.log('📊 Active timer API response:', activeTimerData);
+        
         if (activeTimerData) {
-          console.log('Found existing active timer:', activeTimerData);
+          console.log('✅ Found existing active timer:', activeTimerData);
           
-          // Better time parsing with validation
-          const startTimeValue = activeTimerData.startTime;
-          console.log('Raw startTime value:', startTimeValue);
+          // Log the structure of the response
+          console.log('📋 Timer data structure:', {
+            taskId: activeTimerData.taskId,
+            taskName: activeTimerData.taskName,
+            startTime: activeTimerData.startTime,
+            startTimeType: typeof activeTimerData.startTime
+          });
           
-          let startTimestamp;
-          if (typeof startTimeValue === 'string') {
-            startTimestamp = new Date(startTimeValue).getTime();
-          } else if (typeof startTimeValue === 'number') {
-            startTimestamp = startTimeValue;
-          } else {
-            console.error('Invalid startTime format:', startTimeValue);
-            return;
-          }
+          // Simple time parsing - try the original approach first
+          const start = new Date(activeTimerData.startTime).getTime();
+          console.log('⏰ Parsed start time:', start, 'Current time:', Date.now());
           
           // Validate timestamp
-          if (isNaN(startTimestamp)) {
-            console.error('Failed to parse startTime:', startTimeValue);
+          if (isNaN(start)) {
+            console.error('❌ Failed to parse startTime:', activeTimerData.startTime);
             return;
           }
           
-          // Create task object (will be updated when tasks load)
+          // Create task object
           const tempTask = {
             id: activeTimerData.taskId,
-            name: 'Loading task...', // Different text so we can identify it
+            name: activeTimerData.taskName || 'Loading task...',
             color: '#3B82F6',
             totalTime: 0
           };
           
+          console.log('📝 Setting temp task:', tempTask);
           setActiveTimer(tempTask);
-          setStartTime(startTimestamp);
+          setStartTime(start);
           
-          const elapsed = Math.floor((Date.now() - startTimestamp) / 1000);
-          console.log('Calculated elapsed time:', elapsed);
+          const elapsed = Math.floor((Date.now() - start) / 1000);
+          console.log('⏱️ Calculated elapsed time:', elapsed, 'seconds');
           setElapsedTime(elapsed);
+          
+          console.log('✅ Active timer setup complete');
+        } else {
+          console.log('ℹ️ No active timer found');
         }
       } catch (err) {
-        console.log('No active timer found:', err);
+        console.error('❌ Error checking active timer:', err);
       }
     };
 
@@ -99,15 +105,18 @@ export function TimerProvider({ children }: TimerProviderProps) {
 
   // Update active timer with full task data when tasks load
   useEffect(() => {
-    if (tasks.length > 0 && activeTimer && activeTimer.name === 'Loading task...') {
-      console.log('Updating temp task with full task data');
+    console.log('🔄 Tasks loaded, checking if need to update active timer');
+    console.log('Tasks count:', tasks.length, 'Active timer:', activeTimer?.name);
+    
+    if (tasks.length > 0 && activeTimer && (activeTimer.name === 'Loading task...' || activeTimer.name === 'Loading...')) {
+      console.log('🔍 Looking for full task data for ID:', activeTimer.id);
       const fullTask = tasks.find(t => t.id === activeTimer.id);
       if (fullTask) {
-        console.log('Found full task:', fullTask);
+        console.log('✅ Found full task, updating:', fullTask.name);
         setActiveTimer(fullTask);
       } else {
-        console.warn('Could not find task with ID:', activeTimer.id);
-        console.log('Available tasks:', tasks.map(t => ({ id: t.id, name: t.name })));
+        console.warn('⚠️ Could not find task with ID:', activeTimer.id);
+        console.log('Available task IDs:', tasks.map(t => t.id));
       }
     }
   }, [tasks, activeTimer]);
