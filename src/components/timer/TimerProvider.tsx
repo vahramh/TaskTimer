@@ -59,26 +59,26 @@ export function TimerProvider({ children }: TimerProviderProps) {
           
           // Log the structure of the response
           console.log('📋 Timer data structure:', {
-            taskId: activeTimerData.taskId,
-            taskName: activeTimerData.taskName,
-            startTime: activeTimerData.startTime,
-            startTimeType: typeof activeTimerData.startTime
+            taskId: activeTimerData.timer.taskId,
+            taskName: activeTimerData.timer.taskName,
+            startTime: activeTimerData.timer.startTime,
+            startTimeType: typeof activeTimerData.timer.startTime
           });
           
           // Simple time parsing - try the original approach first
-          const start = new Date(activeTimerData.startTime).getTime();
+          const start = new Date(activeTimerData.timer.startTime).getTime();
           console.log('⏰ Parsed start time:', start, 'Current time:', Date.now());
           
           // Validate timestamp
           if (isNaN(start)) {
-            console.error('❌ Failed to parse startTime:', activeTimerData.startTime);
+            console.error('❌ Failed to parse startTime:', activeTimerData.timer.startTime);
             return;
           }
           
           // Create task object
           const tempTask = {
-            id: activeTimerData.taskId,
-            name: activeTimerData.taskName || 'Loading task...',
+            id: activeTimerData.timer.taskId,
+            name: activeTimerData.timer.taskName || 'Loading task...',
             color: '#3B82F6',
             totalTime: 0
           };
