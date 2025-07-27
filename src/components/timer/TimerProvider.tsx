@@ -54,21 +54,43 @@ export function TimerProvider({ children }: TimerProviderProps) {
         if (activeTimerData) {
           console.log('Found existing active timer:', activeTimerData);
           
-          // Create a temporary task object if tasks haven't loaded yet
-          const task = tasks.find(t => t.id === activeTimerData.taskId) || {
+          // Better time parsing with validation
+          const startTimeValue = activeTimerData.startTime;
+          console.log('Raw startTime value:', startTimeValue);
+          
+          let startTimestamp;
+          if (typeof startTimeValue === 'string') {
+            startTimestamp = new Date(startTimeValue).getTime();
+          } else if (typeof startTimeValue === 'number') {
+            startTimestamp = startTimeValue;
+          } else {
+            console.error('Invalid startTime format:', startTimeValue);
+            return;
+          }
+          
+          // Validate timestamp
+          if (isNaN(startTimestamp)) {
+            console.error('Failed to parse startTime:', startTimeValue);
+            return;
+          }
+          
+          // Create task object (will be updated when tasks load)
+          const tempTask = {
             id: activeTimerData.taskId,
-            name: activeTimerData.taskName || 'Loading...',
+            name: 'Loading task...', // Different text so we can identify it
             color: '#3B82F6',
             totalTime: 0
           };
           
-          setActiveTimer(task);
-          const start = new Date(activeTimerData.startTime).getTime();
-          setStartTime(start);
-          setElapsedTime(Math.floor((Date.now() - start) / 1000));
+          setActiveTimer(tempTask);
+          setStartTime(startTimestamp);
+          
+          const elapsed = Math.floor((Date.now() - startTimestamp) / 1000);
+          console.log('Calculated elapsed time:', elapsed);
+          setElapsedTime(elapsed);
         }
       } catch (err) {
-        console.log('No active timer found');
+        console.log('No active timer found:', err);
       }
     };
 
@@ -77,10 +99,15 @@ export function TimerProvider({ children }: TimerProviderProps) {
 
   // Update active timer with full task data when tasks load
   useEffect(() => {
-    if (tasks.length > 0 && activeTimer && activeTimer.name === 'Loading...') {
+    if (tasks.length > 0 && activeTimer && activeTimer.name === 'Loading task...') {
+      console.log('Updating temp task with full task data');
       const fullTask = tasks.find(t => t.id === activeTimer.id);
       if (fullTask) {
+        console.log('Found full task:', fullTask);
         setActiveTimer(fullTask);
+      } else {
+        console.warn('Could not find task with ID:', activeTimer.id);
+        console.log('Available tasks:', tasks.map(t => ({ id: t.id, name: t.name })));
       }
     }
   }, [tasks, activeTimer]);
