@@ -26,7 +26,7 @@ export interface BackendTask {
   updatedAt: string;
 }
 
-export interface BackendSession {
+export interface UserBackendSession {
   sessionId: string;
   taskId: string;
   taskTitle: string;
@@ -36,6 +36,10 @@ export interface BackendSession {
   status: 'completed' | 'running';
   createdAt: string;
   updatedAt: string;
+}
+
+export interface BackendSession {
+  users: UserBackendSession[];
 }
 
 export interface BackendActiveTimer {
@@ -298,7 +302,7 @@ export const adminAPI = {
     const stats = await apiCall(`/sessions/stats?period=${period}`);
     
     // Transform to analytics format
-    return transformToAnalytics(sessions.data, stats.data);
+    return transformToAnalytics(sessions.data.users, stats.data);
   },
 
   async getGlobalAnalytics() {
@@ -311,7 +315,7 @@ export const adminAPI = {
 };
 
 // Helper functions to transform backend data to frontend format
-function transformToAnalytics(sessions: BackendSession[], stats: any) {
+function transformToAnalytics(sessions: UserBackendSession[], stats: any) {
   // Generate daily activity from sessions
   const dailyActivity = generateDailyActivity(sessions);
   
@@ -334,7 +338,7 @@ function transformToAnalytics(sessions: BackendSession[], stats: any) {
   };
 }
 
-function generateDailyActivity(sessions: BackendSession[]) {
+function generateDailyActivity(sessions: UserBackendSession[]) {
   const daily: { [date: string]: { hours: number; sessions: number } } = {};
   
   sessions.forEach(session => {
