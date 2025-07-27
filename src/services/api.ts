@@ -310,7 +310,8 @@ export const adminAPI = {
     const allStats = await apiCall('/sessions/stats?period=month');
     
     // Transform to global analytics format
-    return transformToGlobalAnalytics(users, allStats.data);
+    console.log(allStats);
+    return transformToGlobalAnalytics(users, allStats.data.users);
   }
 };
 
