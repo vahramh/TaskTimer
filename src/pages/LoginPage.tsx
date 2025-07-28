@@ -4,10 +4,12 @@ import { Clock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export function LoginPage() {
-  const { user, login, loading } = useAuth();
+  const { user, login, setNewPassword, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [newPassword, setNewPasswordInput] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showNewPasswordForm, setShowNewPasswordForm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -16,16 +18,43 @@ export function LoginPage() {
     return <Navigate to="/" replace />;
   }
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError('');
     setIsLoading(true);
+    setError('');
     
     try {
-      await login({ email, password });
-      // Navigation will happen automatically via the Navigate component above
+      const result = await login(email, password);
+      
+      if (result.requiresNewPassword) {
+        setShowNewPasswordForm(true);
+      } else if (!result.success) {
+        setError(result.error || 'Login failed');
+      }
+      // If success, user will be logged in automatically
     } catch (error: any) {
-      setError(error.message || 'Login failed. Please check your credentials.');
+      setError(error.message || 'Login failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleNewPassword = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      const result = await setNewPassword(newPassword);
+      
+      if (result.success) {
+        setShowNewPasswordForm(false);
+        // User should now be logged in
+      } else {
+        setError(result.error || 'Failed to set new password');
+      }
+    } catch (error: any) {
+      setError(error.message || 'Failed to set new password');
     } finally {
       setIsLoading(false);
     }
@@ -42,6 +71,59 @@ export function LoginPage() {
     );
   }
 
+  // New Password Form
+  if (showNewPasswordForm) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <Clock className="text-blue-600" size={32} />
+              <h1 className="text-2xl font-bold text-gray-900">Set New Password</h1>
+            </div>
+            <p className="text-gray-600">Your temporary password must be changed</p>
+          </div>
+
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
+              <AlertCircle className="text-red-500 flex-shrink-0" size={20} />
+              <span className="text-red-700 text-sm">{error}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleNewPassword} className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPasswordInput(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Enter your new password"
+                required
+                disabled={isLoading}
+                minLength={8}
+              />
+              <p className="text-xs text-gray-500 mt-1">Must be at least 8 characters</p>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading || !newPassword}
+              className="w-full bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+            >
+              {isLoading && (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              )}
+              {isLoading ? 'Setting Password...' : 'Set New Password'}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // Login Form
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">

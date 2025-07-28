@@ -1,4 +1,4 @@
-import { cognitoAuthService } from './cognitoAuth';
+import { AuthService } from './auth'; // Use the new AuthService
 
 // Types matching your backend schema
 export interface BackendUser {
@@ -53,17 +53,25 @@ export interface BackendActiveTimer {
 
 const API_BASE = 'https://ymaesypvdc.execute-api.ap-southeast-2.amazonaws.com/dev';
 
-// Helper function to get auth token (you'll need to implement this based on your Cognito setup)
-const getAuthToken = (): string => {
-  return cognitoAuthService.getIdToken() || '';
+// Helper function to get auth token using the new AuthService
+const getAuthToken = async (): Promise<string> => {
+  try {
+    const token = await AuthService.getIdToken();
+    return token || '';
+  } catch (error) {
+    console.error('Failed to get auth token:', error);
+    return '';
+  }
 };
 
 // Helper function for API calls
 const apiCall = async (endpoint: string, options: RequestInit = {}) => {
   const url = `${API_BASE}${endpoint}`;
+  const token = await getAuthToken();
+  
   const defaultHeaders = {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${getAuthToken()}`
+    'Authorization': `Bearer ${token}`
   };
 
   let response = await fetch(url, {
@@ -74,25 +82,20 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     },
   });
 
-  // If we get a 401, try to refresh the token once
+  // If we get a 401, the session is invalid
   if (response.status === 401) {
+    console.error('API call unauthorized - clearing auth state');
+    
+    // Clear the auth state and redirect to login
     try {
-      await cognitoAuthService.refreshSession();
-      
-      // Retry the request with the new token
-      response = await fetch(url, {
-        ...options,
-        headers: {
-          ...defaultHeaders,
-          'Authorization': `Bearer ${cognitoAuthService.getIdToken()}`,
-          ...options.headers,
-        },
-      });
-    } catch (refreshError) {
-      // Refresh failed, redirect to login
-      window.location.href = '/login';
-      throw new Error('Authentication expired. Please log in again.');
+      await AuthService.signOut();
+    } catch (error) {
+      console.error('Error during signOut:', error);
     }
+    
+    // Use window.location to ensure a clean redirect
+    window.location.href = '/login';
+    throw new Error('Authentication expired. Please log in again.');
   }
 
   if (!response.ok) {
@@ -102,7 +105,6 @@ const apiCall = async (endpoint: string, options: RequestInit = {}) => {
   return response.json();
 };
 
-// Real Timer API
 // Real Timer API
 export const timerAPI = {
   async getTasks() {

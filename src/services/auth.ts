@@ -15,6 +15,36 @@ export interface User {
 }
 
 export class AuthService {
+  /**
+   * Check if user is currently authenticated with valid tokens
+   */
+  static async isAuthenticated(): Promise<boolean> {
+    try {
+      // Check if we have a valid auth session
+      const session = await fetchAuthSession();
+      
+      // Verify tokens exist and are valid
+      if (!session.tokens || !session.tokens.accessToken) {
+        console.log('🔍 No access token found');
+        return false;
+      }
+
+      // Additional check: verify we can get current user
+      try {
+        await getCurrentUser();
+        console.log('✅ Authentication valid');
+        return true;
+      } catch (userError) {
+        console.log('❌ Cannot get current user:', userError);
+        return false;
+      }
+      
+    } catch (error) {
+      console.log('❌ Authentication check failed:', error);
+      return false;
+    }
+  }
+
   static async signIn(email: string, password: string) {
     try {
       // First, try to sign out any existing user

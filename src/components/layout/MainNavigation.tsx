@@ -9,8 +9,13 @@ export function MainNavigation() {
 
   const isActive = (path: string) => location.pathname === path;
 
-  // Compute display name from AuthUser
-  const displayName = user ? `${user.firstName} ${user.lastName}`.trim() || user.email : '';
+  // Compute display name from User attributes
+  const displayName = user 
+    ? `${user.attributes?.given_name || ''} ${user.attributes?.family_name || ''}`.trim() || user.email
+    : '';
+
+  // Get user role from attributes
+  const userRole = user?.attributes?.['custom:role'] || 'user';
 
   return (
     <nav className="bg-white shadow-sm border-b px-4 py-3">
@@ -56,7 +61,7 @@ export function MainNavigation() {
           <div className="text-sm text-gray-600">
             <span className="font-medium">{displayName}</span>
             <span className="ml-2 px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
-              {user?.role}
+              {userRole}
             </span>
           </div>
           
