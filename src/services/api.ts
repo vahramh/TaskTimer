@@ -29,7 +29,7 @@ export interface BackendTask {
 export interface UserBackendSession {
   sessionId: string;
   taskId: string;
-  taskTitle: string;
+  taskTitle: string;        // ✅ This matches your data
   startTime: string;
   endTime?: string;
   duration?: number;
@@ -299,21 +299,53 @@ export const adminAPI = {
   },
 
   async getUserAnalytics(userId: string, period = '30d') {
-    // Get user's sessions for analytics
-    const sessions = await apiCall(`/sessions?period=${period}`);
-    const stats = await apiCall(`/sessions/stats?period=${period}`);
-    
-    // Transform to analytics format
-    return transformToAnalytics(sessions.data.users, stats.data);
+    try {
+      console.log('🔍 Getting user analytics for:', userId, 'period:', period);
+      
+      // Get user's sessions for analytics
+      const sessions = await apiCall(`/sessions?period=${period}`);
+      const stats = await apiCall(`/sessions/stats?period=${period}`);
+      
+      // The sessions are at data.sessions (not data.users)
+      const sessionsData = sessions.data?.sessions || [];
+      const statsData = stats.data?.stats || {};
+      
+      console.log('📈 Extracted data:', { 
+        sessionsCount: sessionsData.length, 
+        isArray: Array.isArray(sessionsData),
+        statsKeys: Object.keys(statsData)
+      });
+      
+      // Transform to analytics format
+      return transformToAnalytics(sessionsData, statsData);
+    } catch (error) {
+      console.error('❌ getUserAnalytics error:', error);
+      throw error;
+    }
   },
 
   async getGlobalAnalytics() {
-    const users = await this.getUsers();
-    const allStats = await apiCall('/sessions/stats?period=month');
-    
-    // Transform to global analytics format
-    console.log(allStats);
-    return transformToGlobalAnalytics(users, allStats.data.users);
+    try {
+      console.log('🔍 Starting getGlobalAnalytics...');
+      
+      const users = await this.getUsers();
+      console.log('👥 Users loaded:', users.length);
+      
+      const allStats = await apiCall('/sessions/stats?period=month');
+      console.log('📊 Raw stats response:', allStats);
+      
+      // The stats are nested at data.stats, not data.users
+      const statsData = allStats.data?.stats || {};
+      console.log('📈 Extracted stats data:', statsData);
+      
+      const result = transformToGlobalAnalytics(users, statsData);
+      console.log('✅ Transformed analytics:', result);
+      
+      return result;
+    } catch (error) {
+      console.error('❌ getGlobalAnalytics error:', error);
+      throw error;
+    }
   }
 };
 

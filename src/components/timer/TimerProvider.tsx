@@ -54,8 +54,9 @@ export function TimerProvider({ children }: TimerProviderProps) {
         const activeTimerData = await timerAPI.getActiveTimer();
         console.log('📊 Active timer API response:', activeTimerData);
         
-        if (activeTimerData) {
+        if (activeTimerData && Object.keys(activeTimerData).length > 0) {
           console.log('✅ Found existing active timer:', activeTimerData);
+          console.log('✅ activeTimerData.timer:', activeTimerData.timer);
           
           // Log the structure of the response
           console.log('📋 Timer data structure:', {
