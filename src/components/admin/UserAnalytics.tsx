@@ -150,8 +150,9 @@ export function UserAnalytics({ user }: UserAnalyticsProps) {
     const filteredSessions = sessions.filter(session => {
       if (session.userId !== selectedUserId) return false;
       
-      const sessionDate = new Date(session.startTime).toISOString().split('T')[0];
-      return sessionDate >= startDate && sessionDate <= endDate;
+      // Convert GMT timestamp to local date for comparison
+      const sessionLocalDate = getLocalDateString(session.startTime);
+      return sessionLocalDate >= startDate && sessionLocalDate <= endDate;
     });
 
     // Get unique task titles
@@ -175,14 +176,14 @@ export function UserAnalytics({ user }: UserAnalyticsProps) {
       current.setDate(current.getDate() + 1);
     }
 
-    // Aggregate session durations
+    // Aggregate session durations using local dates
     filteredSessions.forEach(session => {
-      const sessionDate = new Date(session.startTime).toISOString().split('T')[0];
+      const sessionLocalDate = getLocalDateString(session.startTime);
       const taskTitle = session.taskTitle || 'Untitled';
       const durationHours = session.duration / 3600; // Convert seconds to hours
       
-      if (dailyData[sessionDate]) {
-        dailyData[sessionDate][taskTitle] = (dailyData[sessionDate][taskTitle] || 0) + durationHours;
+      if (dailyData[sessionLocalDate]) {
+        dailyData[sessionLocalDate][taskTitle] = (dailyData[sessionLocalDate][taskTitle] || 0) + durationHours;
       }
     });
 
@@ -209,16 +210,26 @@ export function UserAnalytics({ user }: UserAnalyticsProps) {
     return [value, name];
   };
 
+  // Helper function to convert GMT timestamp to local date string (YYYY-MM-DD)
+  const getLocalDateString = (gmtTimestamp: string) => {
+    const date = new Date(gmtTimestamp);
+    const localYear = date.getFullYear();
+    const localMonth = String(date.getMonth() + 1).padStart(2, '0');
+    const localDay = String(date.getDate()).padStart(2, '0');
+    return `${localYear}-${localMonth}-${localDay}`;
+  };
+
   // Calculate task summary data
   const getTaskSummary = () => {
     if (!selectedUserId || sessions.length === 0) return [];
 
-    // Filter sessions for selected user and date range
+    // Filter sessions for selected user and date range using local time conversion
     const filteredSessions = sessions.filter(session => {
       if (session.userId !== selectedUserId) return false;
       
-      const sessionDate = new Date(session.startTime).toISOString().split('T')[0];
-      return sessionDate >= startDate && sessionDate <= endDate;
+      // Convert GMT timestamp to local date for comparison
+      const sessionLocalDate = getLocalDateString(session.startTime);
+      return sessionLocalDate >= startDate && sessionLocalDate <= endDate;
     });
 
     // Group by task and calculate totals
