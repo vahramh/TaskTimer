@@ -1,12 +1,19 @@
 export interface Task {
-  id: string; // Changed from number to string to match backend UUID
-  name: string; // Maps to backend 'title'
-  color: string; // Frontend only (you might want to add this to backend)
-  totalTime: number; // Maps to backend 'totalTimeSpent'
+  id: string;
+  name: string;
+  color: string;
+  totalTime: number;
   description?: string;
   category?: string;
   priority?: 'low' | 'medium' | 'high';
   status?: 'pending' | 'active' | 'completed';
+}
+
+export interface ManualTimeEntryInput {
+  taskId: string;
+  date: string;
+  durationMinutes: number;
+  note?: string;
 }
 
 export interface TimerContextType {
@@ -17,6 +24,7 @@ export interface TimerContextType {
   error: string | null;
   startTimer: (task: Task) => Promise<void>;
   stopTimer: () => Promise<void>;
+  logManualTime: (entry: ManualTimeEntryInput) => Promise<{ success: boolean }>;
   addTask: (taskData: Omit<Task, 'id' | 'totalTime'>) => Promise<{ success: boolean }>;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<{ success: boolean }>;
   deleteTask: (taskId: string) => Promise<{ success: boolean }>;
@@ -25,6 +33,6 @@ export interface TimerContextType {
 
 export interface APIResponse {
   success: boolean;
-  data?: any;
+  data?: unknown;
   message?: string;
 }

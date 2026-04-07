@@ -51,6 +51,14 @@ export interface BackendActiveTimer {
   updatedAt: string;
 }
 
+
+export interface ManualTimeEntryPayload {
+  taskId: string;
+  date: string;
+  durationMinutes: number;
+  note?: string;
+}
+
 const API_BASE = 'https://ymaesypvdc.execute-api.ap-southeast-2.amazonaws.com/dev';
 
 // Helper function to get auth token using the new AuthService
@@ -230,6 +238,19 @@ export const timerAPI = {
       // No active timer is expected sometimes
       console.log('No active timer found');
       return null;
+    }
+  },
+
+  async createManualSession(entry: ManualTimeEntryPayload) {
+    try {
+      const response = await apiCall('/timer/manual', {
+        method: 'POST',
+        body: JSON.stringify(entry)
+      });
+      return response.data || response;
+    } catch (error) {
+      console.error('createManualSession error:', error);
+      throw error;
     }
   },
 
