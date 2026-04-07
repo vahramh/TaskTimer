@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Clock, Calendar, User, BarChart3, RefreshCw } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, 
@@ -95,7 +95,7 @@ export function UserAnalytics({ user }: UserAnalyticsProps) {
     }
   }, [selectedUserId, startDate, endDate]);
 
-  const processChartData = () => {
+  const processChartData = useCallback(() => {
     // Filter sessions for selected user and date range
     const filteredSessions = sessions.filter(session => {
       if (session.userId !== selectedUserId) return false;
@@ -144,7 +144,7 @@ export function UserAnalytics({ user }: UserAnalyticsProps) {
     }));
 
     setChartData(chartData);
-  };
+  }, [sessions, selectedUserId, startDate, endDate]);
 
 
   // Process chart data when sessions change
@@ -155,7 +155,7 @@ export function UserAnalytics({ user }: UserAnalyticsProps) {
       setChartData([]);
       setUniqueTasks([]);
     }
-  }, [sessions, selectedUserId, startDate, endDate]);
+  }, [processChartData, sessions.length, selectedUserId]);
 
   const fetchUsers = async () => {
     try {
