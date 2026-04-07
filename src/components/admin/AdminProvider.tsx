@@ -90,7 +90,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
         role: userData.role as 'admin' | 'user'
       };
       
-      const response = await adminAPI.createUser(backendUserData);
+      await adminAPI.createUser(backendUserData);
       
       // Reload users to get the new user with proper ID
       await loadUsers();

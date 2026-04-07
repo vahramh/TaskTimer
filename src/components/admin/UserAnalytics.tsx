@@ -95,56 +95,6 @@ export function UserAnalytics({ user }: UserAnalyticsProps) {
     }
   }, [selectedUserId, startDate, endDate]);
 
-  // Process chart data when sessions change
-  useEffect(() => {
-    if (sessions.length > 0 && selectedUserId) {
-      processChartData();
-    } else {
-      setChartData([]);
-      setUniqueTasks([]);
-    }
-  }, [sessions, selectedUserId, startDate, endDate]);
-
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`${API_BASE}/users`);
-      const data = await response.json();
-      
-      // Handle Lambda response format with body property
-      let actualData = data;
-      if (data.body && typeof data.body === 'string') {
-        actualData = JSON.parse(data.body);
-      }
-      
-      setUsers(actualData.users || []);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchSessions = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`${API_BASE}/sessions`);
-      const data = await response.json();
-      
-      // Handle Lambda response format with body property
-      let actualData = data;
-      if (data.body && typeof data.body === 'string') {
-        actualData = JSON.parse(data.body);
-      }
-      
-      setSessions(actualData.sessions || []);
-    } catch (error) {
-      console.error('Error fetching sessions:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const processChartData = () => {
     // Filter sessions for selected user and date range
     const filteredSessions = sessions.filter(session => {
@@ -194,6 +144,57 @@ export function UserAnalytics({ user }: UserAnalyticsProps) {
     }));
 
     setChartData(chartData);
+  };
+
+
+  // Process chart data when sessions change
+  useEffect(() => {
+    if (sessions.length > 0 && selectedUserId) {
+      processChartData();
+    } else {
+      setChartData([]);
+      setUniqueTasks([]);
+    }
+  }, [sessions, selectedUserId, startDate, endDate]);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_BASE}/users`);
+      const data = await response.json();
+      
+      // Handle Lambda response format with body property
+      let actualData = data;
+      if (data.body && typeof data.body === 'string') {
+        actualData = JSON.parse(data.body);
+      }
+      
+      setUsers(actualData.users || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchSessions = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_BASE}/sessions`);
+      const data = await response.json();
+      
+      // Handle Lambda response format with body property
+      let actualData = data;
+      if (data.body && typeof data.body === 'string') {
+        actualData = JSON.parse(data.body);
+      }
+      
+      setSessions(actualData.sessions || []);
+    } catch (error) {
+      console.error('Error fetching sessions:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatDate = (dateStr: string) => {
